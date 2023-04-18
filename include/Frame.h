@@ -100,6 +100,8 @@ public:
 
     // dansim
     int call_LoFTR(cv::Mat img1, cv::Mat img2, std::vector<std::vector<double>> &left_matches, std::vector<std::vector<double>> &right_matches, std::vector<std::vector<double>> &left_keyp, std::vector<std::vector<double>> &right_keyp);
+    
+    void ExtractLoFTR_and_match(const cv::Mat &imLeft, const cv::Mat &imRight);
     // dansim
 
 public:
@@ -111,6 +113,9 @@ public:
 
     // Frame timestamp.
     double mTimeStamp;
+
+    // Frame cols
+    int nRows_pyramid;
 
     // Calibration matrix and OpenCV distortion parameters.
     cv::Mat mK;

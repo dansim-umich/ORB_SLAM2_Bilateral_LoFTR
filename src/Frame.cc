@@ -27,7 +27,7 @@
 #include <Python.h>
 #include <stdio.h>
 #include <numpy/arrayobject.h>
-#include <pthread.h>
+#include <cstdlib>
 // dansim
 
 namespace ORB_SLAM2
@@ -69,19 +69,22 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
     :mpORBvocabulary(voc),mpORBextractorLeft(extractorLeft),mpORBextractorRight(extractorRight), mTimeStamp(timeStamp), mK(K.clone()),mDistCoef(distCoef.clone()), mbf(bf), mThDepth(thDepth),
      mpReferenceKF(static_cast<KeyFrame*>(NULL))
 {
-
-    // dansim
-    std::vector<std::vector<double>> left_matches;
-    std::vector<std::vector<double>> right_matches;
-    std::vector<std::vector<double>> left_keyp;
-    std::vector<std::vector<double>> right_keyp;
-    //cv::imshow("Display window", imLeft);
-    call_LoFTR(imLeft, imRight, left_matches, right_matches, left_keyp, right_keyp);
-    // dansim
-
+    cv::theRNG().state = (unsigned long int)time(NULL);
 
     // Frame ID
     mnId=nNextId++;
+
+    nRows_pyramid = imLeft.rows;
+
+    std::cout << "Working on calling python embedding...\n";
+    // call_py("SLAM_Matcher", "match_images", " ", " ");
+    std::vector<std::vector<double>> left_Matches;
+    std::vector<std::vector<double>> right_Matches;
+    std::vector<std::vector<double>> left_keyp;
+    std::vector<std::vector<double>> right_keyp;
+    call_LoFTR(imLeft, imRight, left_Matches, right_Matches, left_keyp, right_keyp);
+    // abort();
+    // std::cout << "Called python embedding successfully!!\n\n";
 
     // Scale Level Info
     mnScaleLevels = mpORBextractorLeft->GetLevels();
@@ -92,11 +95,18 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
     mvLevelSigma2 = mpORBextractorLeft->GetScaleSigmaSquares();
     mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
 
+    // LoFTR - extraction and matching.
+    // ExtractLoFTR_and_match(imLeft, imRight);
+
     // ORB extraction
     thread threadLeft(&Frame::ExtractORB,this,0,imLeft);
     thread threadRight(&Frame::ExtractORB,this,1,imRight);
     threadLeft.join();
     threadRight.join();
+
+    // cout << "mDescriptor[0]: " << mDescriptors.size() << "\n";
+    // cout << "mDescriptor[1]: " << mDescriptorsRight.size() << "\n";
+
 
     N = mvKeys.size();
 
@@ -106,6 +116,14 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
     UndistortKeyPoints();
 
     ComputeStereoMatches();
+
+    // for(int i = 0; i < mvDepth.size(); i++)
+    // {
+    //     cout << mvDepth[i] << " ";
+    // }
+    // cout << "\n";
+
+    // abort();
 
     mvpMapPoints = vector<MapPoint*>(N,static_cast<MapPoint*>(NULL));    
     mvbOutlier = vector<bool>(N,false);
@@ -265,9 +283,68 @@ void Frame::AssignFeaturesToGrid()
 void Frame::ExtractORB(int flag, const cv::Mat &im)
 {
     if(flag==0)
-        (*mpORBextractorLeft)(im,cv::Mat(),mvKeys,mDescriptors);
+        {
+            (*mpORBextractorLeft)(im,cv::Mat(),mvKeys,mDescriptors);
+            // cout << "point: " << mvKeys[0].pt << "\n";
+            // cout << "size: " << mvKeys[0].size << "\n";
+            // cout << "angle: " << mvKeys[0].angle << "\n";
+            // cout << "octave: " << mvKeys[0].octave << "\n";
+            // cout << mDescriptors.size() << "\n";
+            // cout << "=======================================\n";
+            // abort();
+        }
     else
         (*mpORBextractorRight)(im,cv::Mat(),mvKeysRight,mDescriptorsRight);
+}
+
+void Frame::ExtractLoFTR_and_match(const cv::Mat &imLeft, const cv::Mat &imRight)
+{
+    /*
+        Feed imLeft and imRight into LoFTR to obtain their keypoints
+        and feature vectors (aka descriptors).
+        Also compute uR for each left keypoint (uL, vL) and its 
+        corresponding depth value.
+        Input: imLeft and imRight, these are the stereo grayscale images obtained from the camera.
+        Output: 
+            A.) keypoint vectors - kptsA, kptsB, where kptsA and kptsB are each of size [num_matches x 2]
+            B.) feature vectors - featA, featB, where featA and featB are each of size [num_matches x 384]
+    */
+
+    // Use random vectors to find keypoints and feature vectors
+    mDescriptors.create(1200, 32, CV_16U);
+    mDescriptorsRight.create(1200, 32, CV_16U);
+
+    // mDescriptors.create(1200, 384, CV_16U);
+    // mDescriptorsRight.create(1200, 384, CV_16U);
+
+    cv::randu(mDescriptors, cv::Scalar(0), cv::Scalar(300));
+    cv::randu(mDescriptorsRight, cv::Scalar(0), cv::Scalar(300));
+
+    mvKeys.clear();
+    mvKeysRight.clear();
+
+    cv::RNG rng;
+    rng.state = (unsigned long int)time(NULL);
+
+    mvuRight = vector<float>(mvKeys.size(),-1.0f);
+    mvDepth = vector<float>(mvKeys.size(),-1.0f);
+
+    for(int i = 0; i < 1200; i++)
+    {
+        float uL = rng.uniform(0, 300);
+        float vL = rng.uniform(0, 300);
+        cv::KeyPoint kp(uL, vL, 31);
+        mvKeys.push_back(kp);
+
+        float uR = rng.uniform(0, 300);
+        // int vR = rng.uniform(0, 300);
+        kp = cv::KeyPoint(uR, vL, 31);
+        mvKeysRight.push_back(kp);
+
+        mvuRight.push_back(uR);
+        mvDepth.push_back(5);
+    }
+
 }
 
 void Frame::SetPose(cv::Mat Tcw)
@@ -415,9 +492,29 @@ void Frame::ComputeBoW()
     if(mBowVec.empty())
     {
         vector<cv::Mat> vCurrentDesc = Converter::toDescriptorVector(mDescriptors);
+        // cout << "size of mDescriptor: " << mDescriptors.size() << "\n";
+        // cout << "size of vCurrentDesc: " << vCurrentDesc.size() << "\n";
+        // cout << "size of vCurrentDesc[0]" << vCurrentDesc.at(0).size() << "\n";
+        // cout << "=============================\n";
         mpORBvocabulary->transform(vCurrentDesc,mBowVec,mFeatVec,4);
     }
 }
+
+// void Frame::ComputeBoW3()
+// {
+//     /*
+//         Function to compute a DBoW3 vector given features in frame
+//     */
+
+//     if(mBowVec3.empty())
+//     {
+//            // Convert [32 x 1206] cv matrix to a vector of 1206 cv matrices each holding
+//            // a cv matrix of size [32 x 1]
+//         vector<cv::Mat> vCurrentDesc = Converter::toDescriptorVector(mDescriptors);
+//            // Compute bag-of-words vector from given feature vectors
+//         mpLoFTRvocabulary->transform(vCurrentDesc,mBowVec,mFeatVec,4);
+//     }
+// }
 
 void Frame::UndistortKeyPoints()
 {
@@ -483,32 +580,74 @@ void Frame::ComputeImageBounds(const cv::Mat &imLeft)
 
 void Frame::ComputeStereoMatches()
 {
+    // Create vectors of size 'number of keypoints in left image' and 
+    // store a default value of -1.
     mvuRight = vector<float>(N,-1.0f);
     mvDepth = vector<float>(N,-1.0f);
 
     const int thOrbDist = (ORBmatcher::TH_HIGH+ORBmatcher::TH_LOW)/2;
 
     const int nRows = mpORBextractorLeft->mvImagePyramid[0].rows;
+    // const int nRows = nRows_pyramid;
+
+    // cout << "nRows: " << nRows << "\n";
 
     //Assign keypoints to row table
     vector<vector<size_t> > vRowIndices(nRows,vector<size_t>());
 
+    // Reserve enough space for atleast 200 elements in each row
     for(int i=0; i<nRows; i++)
         vRowIndices[i].reserve(200);
 
     const int Nr = mvKeysRight.size();
+
+    // abort();
 
     for(int iR=0; iR<Nr; iR++)
     {
         const cv::KeyPoint &kp = mvKeysRight[iR];
         const float &kpY = kp.pt.y;
         const float r = 2.0f*mvScaleFactors[mvKeysRight[iR].octave];
-        const int maxr = ceil(kpY+r);
-        const int minr = floor(kpY-r);
+        int maxr = ceil(kpY+r);
+        int minr = floor(kpY-r);
+
+        if(maxr > minr)
+        {
+            if(maxr >= nRows_pyramid)
+                maxr = nRows_pyramid;
+            
+            if(minr < 0)
+                minr = 0;
+        }
+        else
+        {
+            if(maxr >= nRows_pyramid)
+            {
+                maxr = nRows_pyramid;
+                minr = nRows_pyramid;
+            }
+            
+            if(maxr < 0)
+            {
+                maxr = 0;
+                minr = 0;
+            }
+
+        }
+
+        // cout << "\nmaxr: " << maxr << "\n";
+        // cout << "minr: " << minr << "\n";
 
         for(int yi=minr;yi<=maxr;yi++)
+        {
             vRowIndices[yi].push_back(iR);
+        }
+
+        // cout << "=====================================\n";
+
     }
+
+    // abort();
 
     // Set limits for search
     const float minZ = mb;
@@ -518,6 +657,8 @@ void Frame::ComputeStereoMatches()
     // For each left keypoint search a match in the right image
     vector<pair<int, int> > vDistIdx;
     vDistIdx.reserve(N);
+
+    // abort();
 
     for(int iL=0; iL<N; iL++)
     {
@@ -551,11 +692,22 @@ void Frame::ComputeStereoMatches()
             if(kpR.octave<levelL-1 || kpR.octave>levelL+1)
                 continue;
 
+            // cout << "iR: " << iR << "\tsize: " << mDescriptorsRight.size() << "\trow: " 
+            //                                             << mDescriptorsRight.rows << "\n";
+
+            if(iR >= mDescriptorsRight.rows)
+                continue;
+
             const float &uR = kpR.pt.x;
 
             if(uR>=minU && uR<=maxU)
             {
+                // cout << "\tInside if statement\n";
+                // cout << "\tiR: " << iR << "\n";
+                // cout << "\tmDescriptorRight.size(): " << mDescriptorsRight.size() << "\n";
                 const cv::Mat &dR = mDescriptorsRight.row(iR);
+                // cout << "\t------------------------\n";
+
                 const int dist = ORBmatcher::DescriptorDistance(dL,dR);
 
                 if(dist<bestDist)
@@ -564,7 +716,15 @@ void Frame::ComputeStereoMatches()
                     bestIdxR = iR;
                 }
             }
+
+            // cout << "\tEnd of loop\n";
+
+            // abort();
         }
+
+        // cout << "+++++++++++++++++++++++++++++\n";
+
+        // abort();
 
         // Subpixel match by correlation
         if(bestDist<thOrbDist)
@@ -641,6 +801,8 @@ void Frame::ComputeStereoMatches()
         }
     }
 
+    // abort();
+
     sort(vDistIdx.begin(),vDistIdx.end());
     const float median = vDistIdx[vDistIdx.size()/2].first;
     const float thDist = 1.5f*1.4f*median;
@@ -697,29 +859,17 @@ cv::Mat Frame::UnprojectStereo(const int &i)
         return cv::Mat();
 }
 
-const char* depthToStr(int depth) {
-  switch(depth){
-    case CV_8U: return "unsigned char";
-    case CV_8S: return "char";
-    case CV_16U: return "unsigned short";
-    case CV_16S: return "short";
-    case CV_32S: return "int";
-    case CV_32F: return "float";
-    case CV_64F: return "double";
-  }
-  return "invalid type!";
-}
-
 // dansim
 int Frame::call_LoFTR(cv::Mat img1, cv::Mat img2, std::vector<std::vector<double>> &left_matches, std::vector<std::vector<double>> &right_matches, std::vector<std::vector<double>> &left_keyp, std::vector<std::vector<double>> &right_keyp)
 {
     // define objects
     PyObject *pName, *pModule, *pFunc;
     PyObject *pArgs, *pValue, *out_array;
-    
+
     // allow access to file location
     PyRun_SimpleString("import sys");
     PyRun_SimpleString("import os");
+    PyRun_SimpleString("orig_dir = os.getcwd()");
     PyRun_SimpleString("os.chdir(\"../../LoFTR\")");
     PyRun_SimpleString("sys.path.append(\".\")");
 
@@ -823,6 +973,7 @@ int Frame::call_LoFTR(cv::Mat img1, cv::Mat img2, std::vector<std::vector<double
         fprintf(stderr, "Failed to load \"LoFTR_Matcher\"\n");
         return 1;
     }
+    PyRun_SimpleString("os.chdir(orig_dir)");
     return 0;
 }
 // dansim
