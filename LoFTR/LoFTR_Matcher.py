@@ -49,30 +49,15 @@ def match_images(img0_raw, img1_raw):
     fm1 = batch['feat_1_matches'].cpu().numpy()
     if (fm0.shape[0] > 1000):
         fm0 = fm0[:1000]
-    if (fm1.shape[0] > 1000):
         fm1 = fm1[:1000]
-    if (mkpts0.shape[0] > 1000):
         mkpts0 = mkpts0[:1000]
-    if (mkpts1.shape[0] > 1000):
         mkpts1 = mkpts1[:1000]
-    fm0_size = fm0.shape
-    fm1_size = fm1.shape
-    mkpts0_size = mkpts0.shape
-    mkpts1_size = mkpts1.shape
-    fm0 = fm0.flatten()
-    fm1 = fm1.flatten()
-    mkpts0 = mkpts0.flatten()
-    mkpts1 = mkpts1.flatten()
-    fm0 = np.insert(fm0, 0, fm0_size[1])
-    fm1 = np.insert(fm1, 0, fm1_size[1])
-    mkpts0 = np.insert(mkpts0, 0, mkpts0_size[1])
-    mkpts1 = np.insert(mkpts1, 0, mkpts1_size[1])
-    fm0 = np.insert(fm0, 0, fm0_size[0])
-    fm1 = np.insert(fm1, 0, fm1_size[0])
-    mkpts0 = np.insert(mkpts0, 0, mkpts0_size[0])
-    mkpts1 = np.insert(mkpts1, 0, mkpts1_size[0])
+    #fm0 = fm0.flatten()
+    #fm1 = fm1.flatten()
+    #mkpts0 = mkpts0.flatten()
+    #mkpts1 = mkpts1.flatten()
     fm0 = fm0.tolist()
     fm1 = fm1.tolist()
     mkpts0 = mkpts0.tolist()
     mkpts1 = mkpts1.tolist()
-    return [fm0, fm1, mkpts0, mkpts1]
+    return [len(mkpts0), mkpts0, mkpts1, fm0, fm1]

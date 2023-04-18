@@ -76,15 +76,9 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
 
     nRows_pyramid = imLeft.rows;
 
-    std::cout << "Working on calling python embedding...\n";
-    // call_py("SLAM_Matcher", "match_images", " ", " ");
-    std::vector<std::vector<double>> left_Matches;
-    std::vector<std::vector<double>> right_Matches;
-    std::vector<std::vector<double>> left_keyp;
-    std::vector<std::vector<double>> right_keyp;
-    call_LoFTR(imLeft, imRight, left_Matches, right_Matches, left_keyp, right_keyp);
-    // abort();
-    // std::cout << "Called python embedding successfully!!\n\n";
+    //std::cout << "Working on calling python embedding...\n";
+    call_LoFTR(imLeft, imRight);
+    //std::cout << "Called python embedding successfully!!\n\n";
 
     // Scale Level Info
     mnScaleLevels = mpORBextractorLeft->GetLevels();
@@ -860,7 +854,7 @@ cv::Mat Frame::UnprojectStereo(const int &i)
 }
 
 // dansim
-int Frame::call_LoFTR(cv::Mat img1, cv::Mat img2, std::vector<std::vector<double>> &left_matches, std::vector<std::vector<double>> &right_matches, std::vector<std::vector<double>> &left_keyp, std::vector<std::vector<double>> &right_keyp)
+int Frame::call_LoFTR(cv::Mat img1, cv::Mat img2)
 {
     // define objects
     PyObject *pName, *pModule, *pFunc;
@@ -915,36 +909,58 @@ int Frame::call_LoFTR(cv::Mat img1, cv::Mat img2, std::vector<std::vector<double
             Py_DECREF(pArgs);
             if (pValue != NULL)
             {
-                // edit pointers
-                std::vector<std::vector<double>> value[4];
-                value[0] = left_matches;
-                value[1] = right_matches;
-                value[2] = left_keyp;
-                value[3] = right_keyp;
-                int size;
-                int height;
-                int width;
-                int row;
-                int column;
-                for (int i=0; i<4; i++)
+                // number of matches
+                out_array = PyList_GetItem(pValue, 0);
+                int N = int(PyFloat_AsDouble(out_array));
+
+                // std::vector<cv::KeyPoint> mvKeys
+                out_array = PyList_GetItem(pValue, 1);
+                float x;
+                float y;
+                float size = 0.1;
+                mvKeys.clear();
+                mvKeys.resize(N);
+                for(int i = 0; i < N; i++)
                 {
-                    out_array = PyList_GetItem(pValue, i);
-                    size = PyList_Size(out_array);
-                    height = int(PyFloat_AsDouble(PyList_GetItem(out_array, 0)));
-                    width = int(PyFloat_AsDouble(PyList_GetItem(out_array, 1)));
-                    value[i].clear();
-                    value[i].resize(height, std::vector<double> (width, 0));
-                    row = 0;
-                    column = 0;
-                    for (int j = 2; j < size; j++)
+                    x = float(PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(out_array, i), 0)));
+                    y = float(PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(out_array, i), 1)));
+                    cv::KeyPoint mkpts0(x, y, size);
+
+                    mvKeys.push_back(mkpts0);
+                }
+
+                // std::vector<cv::KeyPoint> mvKeysRight
+                out_array = PyList_GetItem(pValue, 2);
+                mvKeysRight.clear();
+                mvKeysRight.resize(N);
+                for(int i = 0; i < N; i++)
+                {
+                    x = float(PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(out_array, i), 0)));
+                    y = float(PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(out_array, i), 1)));
+                    cv::KeyPoint mkpts1(x, y, size);
+
+                    mvKeysRight.push_back(mkpts1);
+                }
+
+                // cv::Mat mDescriptors
+                out_array = PyList_GetItem(pValue, 3);
+                mDescriptors = cv::Mat(N, 348, CV_64F);
+                for(int i = 0; i < N; i++)
+                {
+                    for (int j=0; j<348; j++)
                     {
-                        value[i][row][column] = PyFloat_AsDouble(PyList_GetItem(out_array, j));
-                        column = column + 1;
-                        if (column == width)
-                        {
-                            column = 0;
-                            row = row + 1;
-                        }
+                        mDescriptors.at<double>(i,j) = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(out_array, i), j));
+                    }
+                }
+
+                // cv::Mat mDescriptorsRight
+                out_array = PyList_GetItem(pValue, 4);
+                mDescriptorsRight = cv::Mat(N, 348, CV_64F);
+                for(int i = 0; i < N; i++)
+                {
+                    for (int j=0; j<348; j++)
+                    {
+                        mDescriptorsRight.at<double>(i,j) = PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(out_array, i), j));
                     }
                 }
                 Py_DECREF(pValue);

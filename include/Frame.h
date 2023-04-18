@@ -99,7 +99,7 @@ public:
     cv::Mat UnprojectStereo(const int &i);
 
     // dansim
-    int call_LoFTR(cv::Mat img1, cv::Mat img2, std::vector<std::vector<double>> &left_matches, std::vector<std::vector<double>> &right_matches, std::vector<std::vector<double>> &left_keyp, std::vector<std::vector<double>> &right_keyp);
+    int call_LoFTR(cv::Mat img1, cv::Mat img2);
     
     void ExtractLoFTR_and_match(const cv::Mat &imLeft, const cv::Mat &imRight);
     // dansim
