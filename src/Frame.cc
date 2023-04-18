@@ -911,7 +911,7 @@ int Frame::call_LoFTR(cv::Mat img1, cv::Mat img2)
             {
                 // number of matches
                 out_array = PyList_GetItem(pValue, 0);
-                int N = int(PyFloat_AsDouble(out_array));
+                N = int(PyFloat_AsDouble(out_array));
 
                 // std::vector<cv::KeyPoint> mvKeys
                 out_array = PyList_GetItem(pValue, 1);
