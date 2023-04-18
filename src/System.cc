@@ -25,12 +25,6 @@
 #include <thread>
 #include <pangolin/pangolin.h>
 #include <iomanip>
-// dansim
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
-#include <stdio.h>
-#include <numpy/arrayobject.h>
-// dansim
 
 namespace ORB_SLAM2
 {
@@ -45,23 +39,6 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     "This program comes with ABSOLUTELY NO WARRANTY;" << endl  <<
     "This is free software, and you are welcome to redistribute it" << endl <<
     "under certain conditions. See LICENSE.txt." << endl << endl;
-
-    // dansim
-    /*float data_1[10] = {1,2,3,4,5,6,7,8,9,10};
-    float data_2[10] = {10,20,30,40,50,60,70,80,90,100};
-    cv::Mat mat1 (cv::Size(5,2), CV_32F, data_1, cv::Mat::AUTO_STEP);
-    cv::Mat mat2 (cv::Size(5,2), CV_32F, data_2, cv::Mat::AUTO_STEP);
-    std::vector<std::vector<long>> vect;
-    call_LoFTR(mat1, mat2, vect);
-    for (int i=0; i<vect.size(); i++)
-    {
-        for (int j=0; j<vect[i].size(); j++)
-        {
-            cout << vect[i][j] << " ";
-        }
-        cout << endl;
-    }*/
-    // dansim
     
     cout << "Input sensor was set to: ";
 
@@ -138,22 +115,6 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
 cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp)
 {
-    // dansim
-    /*std::vector<std::vector<double>> left_matches;
-    std::vector<std::vector<double>> right_matches;
-    std::vector<std::vector<double>> left_keyp;
-    std::vector<std::vector<double>> right_keyp;
-    cv::imshow("Display window", imLeft);
-    call_LoFTR(imLeft, imRight, left_matches, right_matches, left_keyp, right_keyp);
-    for (int i=0; i<left_matches.size(); i++)
-    {
-        for (int j=0; j<left_matches[i].size(); j++)
-        {
-            cout << left_matches[i][j] << " ";
-        }
-        cout << endl;
-    }*/
-    // dansim
     
     if(mSensor!=STEREO)
     {
@@ -528,94 +489,5 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
     unique_lock<mutex> lock(mMutexState);
     return mTrackedKeyPointsUn;
 }
-
-// dansim
-int System::call_LoFTR(cv::Mat img1, cv::Mat img2, std::vector<std::vector<double>> &left_matches, std::vector<std::vector<double>> &right_matches, std::vector<std::vector<double>> &left_keyp, std::vector<std::vector<double>> &right_keyp)
-{
-    PyObject *pName, *pModule, *pFunc;
-    PyObject *pArgs, *pValue;
-    PyObject *in_array_1, *in_array_2;
-    PyObject *out_array[4];
-    cout << img1.at<double>(0,0) << endl;
-
-    Py_Initialize();
-    // allow access to file location
-    PyRun_SimpleString("import sys");
-    PyRun_SimpleString("sys.path.append(\"/home/dansim/LoFTR\")");
-    PyRun_SimpleString("sys.path.append(\"/home/dansim/LoFTR/demo\")");
-    // define file name
-    pName = PyUnicode_DecodeFSDefault("SLAM_Matcher");
-    pModule = PyImport_Import(pName);
-    if (pModule == NULL)
-    {
-        printf("No python file found");
-        return 0;
-    }
-    Py_DECREF(pName);
-    // define function name
-    pFunc = PyObject_GetAttrString(pModule, "match_images");
-    if (!(pFunc && PyCallable_Check(pFunc)))
-    {
-        printf("No python function found");
-        return 0;
-    }
-
-    // define arguments to pass
-    pArgs = PyTuple_New(2);
-    npy_intp dims[2] = {img1.cols, img1.rows};
-    import_array();
-    float *ptr_1 = img1.ptr<float>(0);
-    float *ptr_2 = img2.ptr<float>(0);
-    in_array_1 = PyArray_SimpleNewFromData(2, dims, NPY_FLOAT, ptr_1);
-    in_array_2 = PyArray_SimpleNewFromData(2, dims, NPY_FLOAT, ptr_2);
-    PyTuple_SetItem(pArgs, 0, in_array_1);
-    PyTuple_SetItem(pArgs, 1, in_array_2);
-
-    // call function
-    pValue = PyObject_CallObject(pFunc, pArgs);
-    Py_DECREF(pFunc);
-    Py_DECREF(pArgs);
-    // edit pointers
-    std::vector<std::vector<double>> value[4];
-    value[0] = left_matches;
-    value[1] = right_matches;
-    value[2] = left_keyp;
-    value[3] = right_keyp;
-    int size[4];
-    double height[4];
-    double width = 384.0;
-    int row;
-    int column;
-    for (int i=0; i<4; i++)
-    {
-        out_array[i] = PyList_GetItem(pValue, i);
-        size[i] = PyList_Size(out_array[i]);
-        height[i] = PyFloat_AsDouble(PyList_GetItem(out_array[i], 0));
-        value[i].clear();
-        value[i].resize(height[i], std::vector<double> (width, 0));
-        row = 0;
-        column = 0;
-        for (int j = 1; j < size[i]; j++)
-        {
-            value[i][row][column] = PyFloat_AsDouble(PyList_GetItem(pValue, j));
-            column = column + 1;
-            if (column == width)
-            {
-                column = 0;
-                row = row + 1;
-            }
-        }
-    }
-    Py_DECREF(in_array_1);
-    Py_DECREF(in_array_2);
-    Py_DECREF(out_array[0]);
-    Py_DECREF(out_array[1]);
-    Py_DECREF(out_array[2]);
-    Py_DECREF(out_array[3]);
-    Py_DECREF(pModule);
-    Py_DECREF(pValue);
-    return 1;
-}
-// dansim
 
 } //namespace ORB_SLAM

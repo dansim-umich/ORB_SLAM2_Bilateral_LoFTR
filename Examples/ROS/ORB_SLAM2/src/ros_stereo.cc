@@ -61,7 +61,6 @@ int main(int argc, char **argv)
     }    
     // dansim
     Py_Initialize();
-    PyEval_InitThreads();
     // dansim
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.

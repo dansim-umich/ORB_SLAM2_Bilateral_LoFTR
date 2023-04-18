@@ -713,102 +713,117 @@ const char* depthToStr(int depth) {
 // dansim
 int Frame::call_LoFTR(cv::Mat img1, cv::Mat img2, std::vector<std::vector<double>> &left_matches, std::vector<std::vector<double>> &right_matches, std::vector<std::vector<double>> &left_keyp, std::vector<std::vector<double>> &right_keyp)
 {
-    cout << "call" << endl;
-    // check for threading
-    PyGILState_STATE gstate;
-    gstate = PyGILState_Ensure();
-    
-    PyRun_SimpleString("import sys");
-    PyRun_SimpleString("sys.path.append(\"/home/dansim/LoFTR\")");
-    PyRun_SimpleString("sys.path.append(\"/home/dansim/LoFTR/demo\")");
-    PyRun_SimpleString("sys.argv  = ['']");
-
     // define objects
     PyObject *pName, *pModule, *pFunc;
-    PyObject *pArgs, *pValue;
-    PyObject *in_array_1, *in_array_2;
-    PyObject *out_array[4];
-
+    PyObject *pArgs, *pValue, *out_array;
+    
     // allow access to file location
+    PyRun_SimpleString("import sys");
+    PyRun_SimpleString("import os");
+    PyRun_SimpleString("os.chdir(\"../../LoFTR\")");
+    PyRun_SimpleString("sys.path.append(\".\")");
+
     // define file name
-    pName = PyUnicode_DecodeFSDefault("SLAM_Matcher");
+    pName = PyUnicode_DecodeFSDefault("LoFTR_Matcher");
     pModule = PyImport_Import(pName);
-    if (pModule == NULL)
-    {
-        printf("No python file found");
-        return 0;
-    }
     Py_DECREF(pName);
-    // define function name
-    pFunc = PyObject_GetAttrString(pModule, "match_images");
-    if (!(pFunc && PyCallable_Check(pFunc)))
+    if (pModule != NULL)
     {
-        printf("No python function found");
-        return 0;
-    }
+        // define function name
+        pFunc = PyObject_GetAttrString(pModule, "match_images");
 
-    // define arguments to pass
-    pArgs = PyTuple_New(2);
-    npy_intp dims_1[2] = {img1.rows, img1.cols};
-    npy_intp dims_2[2] = {img2.rows, img2.cols};
-    import_array();
-    uint8_t *ptr_1 = img1.ptr<uint8_t>(0);
-    uint8_t *ptr_2 = img2.ptr<uint8_t>(0);
-    in_array_1 = PyArray_SimpleNewFromData(2, dims_1, NPY_UINT8, ptr_1);
-    in_array_2 = PyArray_SimpleNewFromData(2, dims_2, NPY_UINT8, ptr_2);
-    PyTuple_SetItem(pArgs, 0, in_array_1);
-    PyTuple_SetItem(pArgs, 1, in_array_2);
-    cout << "got here" << endl;
-
-    // call function
-    pValue = PyObject_CallObject(pFunc, pArgs);
-    Py_DECREF(pFunc);
-    Py_DECREF(pArgs);
-    // edit pointers
-    std::vector<std::vector<double>> value[4];
-    value[0] = left_matches;
-    value[1] = right_matches;
-    value[2] = left_keyp;
-    value[3] = right_keyp;
-    int size[4];
-    int height[4];
-    int width[4];
-    int row;
-    int column;
-    for (int i=0; i<4; i++)
-    {
-        out_array[i] = PyList_GetItem(pValue, i);
-        size[i] = PyList_Size(out_array[i]);
-        height[i] = int(PyFloat_AsDouble(PyList_GetItem(out_array[i], 0)));
-        width[i] = int(PyFloat_AsDouble(PyList_GetItem(out_array[i], 1)));
-        value[i].clear();
-        value[i].resize(height[i], std::vector<double> (width[i], 0));
-        row = 0;
-        column = 0;
-        for (int j = 2; j < size[i]; j++)
+        if (pFunc && PyCallable_Check(pFunc))
         {
-            value[i][row][column] = PyFloat_AsDouble(PyList_GetItem(out_array[i], j));
-            column = column + 1;
-            if (column == int(width[i]))
+            // define arguments to pass
+            pArgs = PyTuple_New(2);
+            import_array();
+            npy_intp dims_1[2] = {img1.rows, img1.cols};
+            npy_intp dims_2[2] = {img2.rows, img2.cols};
+            uint8_t *ptr_1 = img1.ptr<uint8_t>(0);
+            uint8_t *ptr_2 = img2.ptr<uint8_t>(0);
+
+            pValue = PyArray_SimpleNewFromData(2, dims_1, NPY_UINT8, ptr_1);
+            if (!pValue) {
+                Py_DECREF(pArgs);
+                Py_DECREF(pModule);
+                fprintf(stderr, "Cannot convert image 1\n");
+                return 1;
+            }
+            PyTuple_SetItem(pArgs, 0, pValue);
+            
+            pValue = PyArray_SimpleNewFromData(2, dims_2, NPY_UINT8, ptr_2);
+            if (!pValue) {
+                Py_DECREF(pArgs);
+                Py_DECREF(pModule);
+                fprintf(stderr, "Cannot convert image 2\n");
+                return 1;
+            }
+            PyTuple_SetItem(pArgs, 1, pValue);
+            
+            // call function
+            pValue = PyObject_CallObject(pFunc, pArgs);
+            Py_DECREF(pArgs);
+            if (pValue != NULL)
             {
-                column = 0;
-                row = row + 1;
+                // edit pointers
+                std::vector<std::vector<double>> value[4];
+                value[0] = left_matches;
+                value[1] = right_matches;
+                value[2] = left_keyp;
+                value[3] = right_keyp;
+                int size;
+                int height;
+                int width;
+                int row;
+                int column;
+                for (int i=0; i<4; i++)
+                {
+                    out_array = PyList_GetItem(pValue, i);
+                    size = PyList_Size(out_array);
+                    height = int(PyFloat_AsDouble(PyList_GetItem(out_array, 0)));
+                    width = int(PyFloat_AsDouble(PyList_GetItem(out_array, 1)));
+                    value[i].clear();
+                    value[i].resize(height, std::vector<double> (width, 0));
+                    row = 0;
+                    column = 0;
+                    for (int j = 2; j < size; j++)
+                    {
+                        value[i][row][column] = PyFloat_AsDouble(PyList_GetItem(out_array, j));
+                        column = column + 1;
+                        if (column == width)
+                        {
+                            column = 0;
+                            row = row + 1;
+                        }
+                    }
+                }
+                Py_DECREF(pValue);
+            }
+            else {
+                Py_DECREF(pFunc);
+                Py_DECREF(pModule);
+                PyErr_Print();
+                fprintf(stderr,"Call failed\n");
+                return 1;
             }
         }
+        else
+        {
+            if (PyErr_Occurred())
+            {
+                PyErr_Print();
+            }
+            fprintf(stderr, "Cannot find function \"match_images\"\n");
+        }
+        Py_XDECREF(pFunc);
+        Py_DECREF(pModule);
     }
-    Py_DECREF(in_array_1);
-    Py_DECREF(in_array_2);
-    Py_DECREF(out_array[0]);
-    Py_DECREF(out_array[1]);
-    Py_DECREF(out_array[2]);
-    Py_DECREF(out_array[3]);
-    Py_DECREF(pModule);
-    Py_DECREF(pValue);
-    cout << "fin" << endl;
-
-    // release thread
-    PyGILState_Release(gstate);
-    return 1;
+    else {
+        PyErr_Print();
+        fprintf(stderr, "Failed to load \"LoFTR_Matcher\"\n");
+        return 1;
+    }
+    return 0;
 }
 // dansim
 
