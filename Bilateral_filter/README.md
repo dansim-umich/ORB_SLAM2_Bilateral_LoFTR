@@ -26,7 +26,7 @@ rosparam set use_sim_time true
 rosbag play sequence03.bag --clock -r 0.5 
 ```
 After playing the bag file, exit ORB_SLAM2 and save the trajectory.
-## Install evaluation software 
+## Evaluation using [evo](https://github.com/MichaelGrupp/evo)
 Install the evaluation software [evo](https://github.com/MichaelGrupp/evo)
 ```
 sudo apt install python-pip 
@@ -41,3 +41,14 @@ Generate the comparison for trajectory by
 ```
 evo_traj tum --ref=truth.txt before_filter.txt after_filter.txt -p -va 
 ```
+To compare the ASE(Absolute Pose Errors) of results before and after implementing bilateral filter. Make a new directory, evaluate the ASE of both results and save them as zip files in that directory 
+```
+mkdir results
+evo_ape tum truth.txt before.txt -va --plot --plot_mode xyz --save_results results/before.zip
+evo_ape tum truth.txt after.txt -va --plot --plot_mode xyz --save_results results/after.zip
+```
+Generate the ASE comparison plots by 
+```
+evo_res results/*.zip -p --save_table results/table.csv
+```
+
