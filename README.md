@@ -16,7 +16,7 @@ This project attempts to modify **ORB-SLAM2** via two methods: **bilateral filte
 ORB-SLAM2 is an open source images-based SLAM method
 
 # Bilateral Filter
-A Bilateral Filter reduces noise in an image by reducing information entropy.
+A Bilateral Filter reduces noise in an image by reducing information entropy. A detailed readme could be found under bilateral fiter directory 
 
 # LoFTR
 LoFTR, Local Feature Mapping with Transformers, is a neural network that matches features between images.
