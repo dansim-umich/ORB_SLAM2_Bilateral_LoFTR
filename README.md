@@ -15,7 +15,7 @@ This project attempts to modify **ORB-SLAM2** via two methods: **bilateral filte
 In recent years, there has been a surge in investment from companies towards perception for agricultural robots for various tasks like precision agriculture, weed identification, and crop monitoring. Simultaneous Localization and Mapping (SLAM) has emerged as a popular approach for accurate environment mapping and localization, and visual perception provides cost-efficient and rich feature representations compared to LIDAR. However, developing visual SLAM for agriculture poses challenges such as monotonous rural landscapes, varying outdoor illumination, and camera motions due to irregular terrain. This paper proposes an improved visual SLAM method for farm mapping, addressing the identified challenges and evaluating its performance on the Rosario dataset. The proposed method improves the accuracy and robustness of visual SLAM for agricultural applications.
 
 ## Bilateral Filter
-A Bilateral Filter reduces noise in an image by reducing information entropy. A detailed readme could be found under Bilateral_fiter directory 
+A Bilateral Filter reduces noise in an image by reducing information entropy. A detailed readme could be found under [Bilateral_fiter directory](https://github.com/dansim-umich/ORB_SLAM2_Bilateral_LoFTR/tree/master/Bilateral_filter).
 
 # 2. Prerequisites
 This library is most stable within an **Ubuntu 18.04** environment.
@@ -105,7 +105,7 @@ Clone the repository:
 git clone https://github.com/dansim-umich/ORB_SLAM2_Bilateral_LoFTR.git
 ```
 
-## build ORB-SLAM2
+## Build ORB-SLAM2
 We provide a script `build.sh` to build the *Thirdparty* libraries and *ORB-SLAM2*. Execute:
 ```
 cd ORB_SLAM2_Bilateral_LoFTR
@@ -115,7 +115,7 @@ chmod +x build.sh
 
 This will create **libORB_SLAM2.so**  at *lib* folder and the executables **mono_tum**, **mono_kitti**, **rgbd_tum**, **stereo_kitti**, **mono_euroc** and **stereo_euroc** in *Examples* folder.
 
-## build ros
+## Build ROS
 Add the path including *Examples/ROS/ORB_SLAM2* to the ROS_PACKAGE_PATH environment variable. Open *.bashrc* file and add at the end the following line. Replace PATH by the folder where you cloned ORB_SLAM2_Bilateral_LoFTR:
 
 ```
@@ -146,7 +146,7 @@ and execute:
 ./build_ros.sh
 ```
 
-# 4. datset
+# 4. Datset
 This project was performed with the [Rosario](https://www.cifasis-conicet.gov.ar/robot/doku.php) agricultural dataset. 
 For x = 1,2,3,4,5, or 6
 ```
