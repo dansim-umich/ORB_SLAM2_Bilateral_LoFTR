@@ -20,7 +20,7 @@ When creating a new linux environment it is necessary to execute:
 ```
 sudo apt-get update
 ```
-=======
+
 # Bilateral Filter
 A Bilateral Filter reduces noise in an image by reducing information entropy. A detailed readme could be found under Bilateral_fiter directory 
 
