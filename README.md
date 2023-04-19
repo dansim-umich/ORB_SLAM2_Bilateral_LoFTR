@@ -14,7 +14,6 @@ This project attempts to modify **ORB-SLAM2** via two methods: **bilateral filte
 
 In recent years, there has been a surge in investment from companies towards perception for agricultural robots for various tasks like precision agriculture, weed identification, and crop monitoring. Simultaneous Localization and Mapping (SLAM) has emerged as a popular approach for accurate environment mapping and localization, and visual perception provides cost-efficient and rich feature representations compared to LIDAR. However, developing visual SLAM for agriculture poses challenges such as monotonous rural landscapes, varying outdoor illumination, and camera motions due to irregular terrain. This paper proposes an improved visual SLAM method for farm mapping, addressing the identified challenges and evaluating its performance on the Rosario dataset. The proposed method improves the accuracy and robustness of visual SLAM for agricultural applications.
 
-<<<<<<< HEAD
 # 2. Prerequisites
 This library is most stable within an **Ubuntu 18.04** environment.
 When creating a new linux environment it is necessary to execute:
@@ -24,7 +23,6 @@ sudo apt-get update
 =======
 # Bilateral Filter
 A Bilateral Filter reduces noise in an image by reducing information entropy. A detailed readme could be found under Bilateral_fiter directory 
->>>>>>> bfee0b3b4a10e3e097b019c8ee95b7002f0c439a
 
 ## C++11 or C++0x Compiler
 We use the new thread and chrono functionalities of C++11.
@@ -60,7 +58,6 @@ in line 730 of
 opencv/modules/python/src2/cv2
 ```
 
-<<<<<<< HEAD
 Install instructions can be found at: https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html under Detailed Process.
 **do not download opencv-4.x**
 **When doing OpenCV cmake step add -DENABLE_PRECOMPILED_HEADERS=OFF**
@@ -211,6 +208,3 @@ The *rosbag* terminal can now also be closed with *ctrl + c*.
         journal={{CVPR}},
         year={2021}
     }
-=======
-To Install ORB-SLAM2 enter the ORB_SLAM2 folder and follow the included README
->>>>>>> bfee0b3b4a10e3e097b019c8ee95b7002f0c439a
