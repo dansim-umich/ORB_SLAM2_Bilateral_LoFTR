@@ -52,5 +52,5 @@ Generate the ASE comparison plots by
 evo_res results/*.zip -p --save_table results/table.csv
 ```
 ## Calculate Inference Time
-Replace the ros_stereo.cc from the orignial ORB_SLAM2 with the [ORBextractor.cc](https://github.com/yuxinton/Bilteral-Filter/blob/main/ORBextractor.cc) in this repo.
+Replace the ros_stereo.cc from the orignial ORB_SLAM2 with the modified [ros_stereo.cc](https://github.com/dansim-umich/ORB_SLAM2_Bilateral_LoFTR/blob/master/Bilateral_filter/ros_stereo.cc).
 
