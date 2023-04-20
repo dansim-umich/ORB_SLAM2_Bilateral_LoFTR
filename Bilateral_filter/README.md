@@ -53,7 +53,7 @@ evo_res results/*.zip -p --save_table results/table.csv
 ```
 ## Calculate Inference Time
 Rebuild ORB_SLAM2 with the modified [ros_stereo.cc](https://github.com/dansim-umich/ORB_SLAM2_Bilateral_LoFTR/blob/master/Bilateral_filter/ros_stereo.cc).
-The modified  [ros_stereo.cc](https://github.com/dansim-umich/ORB_SLAM2_Bilateral_LoFTR/blob/master/Bilateral_filter/ros_stereo.cc) utilized chrono liberay to calculate inference time.
+The modified  [ros_stereo.cc](https://github.com/dansim-umich/ORB_SLAM2_Bilateral_LoFTR/blob/master/Bilateral_filter/ros_stereo.cc) utilized chrono library to calculate inference time.
 ```
 ./build.sh
 ./build_ros.sh
