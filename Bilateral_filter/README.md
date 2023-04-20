@@ -52,5 +52,21 @@ Generate the ASE comparison plots by
 evo_res results/*.zip -p --save_table results/table.csv
 ```
 ## Calculate Inference Time
-Replace the ros_stereo.cc from the orignial ORB_SLAM2 with the modified [ros_stereo.cc](https://github.com/dansim-umich/ORB_SLAM2_Bilateral_LoFTR/blob/master/Bilateral_filter/ros_stereo.cc).
+Rebuild ORB_SLAM2 with the modified [ros_stereo.cc](https://github.com/dansim-umich/ORB_SLAM2_Bilateral_LoFTR/blob/master/Bilateral_filter/ros_stereo.cc).
+The modified  [ros_stereo.cc](https://github.com/dansim-umich/ORB_SLAM2_Bilateral_LoFTR/blob/master/Bilateral_filter/ros_stereo.cc) utilized chrono liberay to calculate inference time.
+```
+./build.sh
+./build_ros.sh
+```
+Run the rebuilt ORB_SLAM2
+```
+rosparam set use_sim_time true 
+rosrun ORB_SLAM2 Stereo Vocabulary/ORBvoc.txt Examples/ROS/ORB_SLAM2/orbslam_ros.yaml.txt true 
+```
+Play the sequence bag file and the inference time will be printed to command window.
+```
+rosparam set use_sim_time true 
+rosbag play sequence03.bag --clock -r 0.5 
+```
+
 
